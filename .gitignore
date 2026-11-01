@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Rails (backend)
+/backend/log/*
+/backend/tmp/*
+/backend/config/master.key
+/backend/.env*
+
+# Node (frontend)
+node_modules/
+/frontend/dist/
