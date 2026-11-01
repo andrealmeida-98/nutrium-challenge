@@ -1,0 +1,17 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  guest_name: MyString
+  guest_email: MyString
+  starts_at: 2026-11-01 19:06:29
+  ends_at: 2026-11-01 19:06:29
+  status: MyString
+  service: one
+
+two:
+  guest_name: MyString
+  guest_email: MyString
+  starts_at: 2026-11-01 19:06:29
+  ends_at: 2026-11-01 19:06:29
+  status: MyString
+  service: two
