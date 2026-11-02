@@ -1,4 +1,7 @@
 class AppointmentRequest < ApplicationRecord
+  # Lançada ao tentar aceitar/rejeitar um pedido que já não está pendente.
+  class InvalidTransition < StandardError; end
+
   belongs_to :service
 
   enum :status, {
@@ -45,7 +48,35 @@ class AppointmentRequest < ApplicationRecord
     request
   end
 
+  # Nutricionista rejeita o pedido.
+  def reject!
+    with_lock do # transação + relê e bloqueia este pedido
+      ensure_pending!
+      rejected! # gerado pelo enum: update!(status: "rejected")
+    end
+  end
+
+  # Regra 3: aceitar rejeita os pendentes sobrepostos da mesma nutricionista.
+  def accept!
+    service.nutritionist.with_lock do
+      lock! # relê o pedido e bloqueia-o: ninguém o muda até acabar
+      ensure_pending!
+
+      accepted!
+
+      AppointmentRequest.pending
+                        .for_nutritionist(service.nutritionist_id)
+                        .overlapping(starts_at, ends_at)
+                        .each(&:reject!)
+    end
+  end
+
   private
+
+  # Só pedidos pendentes podem ser aceites ou rejeitados.
+  def ensure_pending!
+    raise InvalidTransition, "request is #{status}, not pending" unless pending?
+  end
 
   # Bloqueia pedidos que colidem com um já aceite da mesma nutricionista.
   def no_accepted_overlap
