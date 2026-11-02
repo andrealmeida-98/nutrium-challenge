@@ -1,7 +1,5 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+rita:
+  name: Rita Silva
 
-one:
-  name: MyString
-
-two:
-  name: MyString
+joao:
+  name: João Costa

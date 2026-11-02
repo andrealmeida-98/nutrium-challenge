@@ -1,15 +1,21 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# A Rita tem dois serviços de durações diferentes (para testar sobreposições).
+rita_consulta:
+  name: Consulta de nutrição
+  price_cents: 4000
+  duration_minutes: 60
+  city: braga
+  nutritionist: rita
 
-one:
-  name: MyString
-  price_cents: 1
-  duration_minutes: 1
-  city: one
-  nutritionist: one
+rita_followup:
+  name: Consulta de acompanhamento
+  price_cents: 2500
+  duration_minutes: 30
+  city: braga
+  nutritionist: rita
 
-two:
-  name: MyString
-  price_cents: 1
-  duration_minutes: 1
-  city: two
-  nutritionist: two
+joao_consulta:
+  name: Consulta de nutrição
+  price_cents: 5000
+  duration_minutes: 60
+  city: porto
+  nutritionist: joao

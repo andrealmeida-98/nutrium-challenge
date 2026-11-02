@@ -1,11 +1,9 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
-
-one:
+braga:
   name: Braga
-  latitude: 9.99
-  longitude: 9.99
+  latitude: 41.5454
+  longitude: -8.4265
 
-two:
+porto:
   name: Porto
-  latitude: 9.99
-  longitude: 9.99
+  latitude: 41.1496
+  longitude: -8.6110
