@@ -1,0 +1,10 @@
+Hi <%= @request.guest_name %>,
+
+Good news: <%= @nutritionist.name %> accepted your appointment request.
+
+Service:  <%= @service.name %>
+Where:    <%= @service.city.name %>
+When:     <%= @request.starts_at.strftime("%A, %d %B %Y") %>, <%= @request.starts_at.strftime("%H:%M") %> to <%= @request.ends_at.strftime("%H:%M") %>
+Price:    <%= number_to_currency(@service.price_cents / 100.0, unit: "€") %>
+
+See you there!

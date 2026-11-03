@@ -1,0 +1,9 @@
+Hi <%= @request.guest_name %>,
+
+Unfortunately <%= @nutritionist.name %> could not accept your appointment request.
+
+Service:  <%= @service.name %>
+Where:    <%= @service.city.name %>
+When:     <%= @request.starts_at.strftime("%A, %d %B %Y") %>, <%= @request.starts_at.strftime("%H:%M") %> to <%= @request.ends_at.strftime("%H:%M") %>
+
+You are welcome to request another time or another nutritionist.
