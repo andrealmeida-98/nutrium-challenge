@@ -26,7 +26,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<SearchPage />} />
         <Route path="/professionals" element={<ProfessionalsPage />} />
-        <Route path="/nutritionists/:id/pending-requests" element={<PendingRequestsPage />} />
+        <Route path="/professionals/:id/pending-requests" element={<PendingRequestsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

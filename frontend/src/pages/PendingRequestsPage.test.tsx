@@ -26,9 +26,9 @@ const listBody = (requests: AppointmentRequest[]) => ({
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={['/nutritionists/1/pending-requests']}>
+    <MemoryRouter initialEntries={['/professionals/1/pending-requests']}>
       <Routes>
-        <Route path="/nutritionists/:id/pending-requests" element={<PendingRequestsPage />} />
+        <Route path="/professionals/:id/pending-requests" element={<PendingRequestsPage />} />
       </Routes>
     </MemoryRouter>,
   )

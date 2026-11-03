@@ -34,7 +34,7 @@ export default function ProfessionalsPage() {
         <ul className="divide-y divide-gray-100 bg-white shadow-sm">
           {data?.nutritionists.map((n) => (
             <li key={n.id}>
-              <Link to={`/nutritionists/${n.id}/pending-requests`} className="flex items-center gap-4 px-5 py-4 hover:bg-brand-soft">
+              <Link to={`/professionals/${n.id}/pending-requests`} className="flex items-center gap-4 px-5 py-4 hover:bg-brand-soft">
                 <Avatar name={n.name} className="size-12 text-lg" />
                 <span className="font-medium text-brand">{n.name}</span>
                 <span className="text-sm text-muted">{t('professionals.role', { license: n.license_number })}</span>
