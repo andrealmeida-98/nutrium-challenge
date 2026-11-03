@@ -28,7 +28,7 @@ export default function NutritionistCard({ nutritionist, fromCity, onSchedule }:
             <StarIcon /> {t('card.followUp')}
           </span>
           <h2 className="text-2xl font-medium text-brand">{nutritionist.name}</h2>
-          <p className="text-sm text-ink">{t('card.dietitian', { license: nutritionist.license_number })}</p>
+          <p className="text-sm text-ink">{t('card.role', { license: nutritionist.license_number })}</p>
 
           <div className="mt-6 grid gap-x-24 gap-y-3 text-sm md:grid-cols-2">
             <div className="flex gap-3">

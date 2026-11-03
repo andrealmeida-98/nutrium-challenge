@@ -21,7 +21,7 @@ const en = {
   pagination: { label: 'Pagination', previous: 'Previous page', next: 'Next page' },
   card: {
     followUp: 'Follow-up',
-    dietitian: 'Dietitian • {{license}}',
+    role: 'Nutritionist • {{license}}',
     distanceFrom: '{{distance}} from {{city}}',
     service: 'Service',
     duration: '{{price}} · {{minutes}} min',
@@ -69,7 +69,7 @@ const en = {
   professionals: {
     title: 'Professional area',
     subtitle: 'Choose who you are to see your pending appointment requests.',
-    dietitian: 'Dietitian • {{license}}',
+    role: 'Nutritionist • {{license}}',
   },
   notFound: { title: 'Page not found', back: 'Back to the search' },
   errors: {

@@ -43,7 +43,7 @@ describe('SearchPage', () => {
     renderPage()
 
     expect(await screen.findByRole('heading', { name: 'Ana Ribeiro' })).toBeInTheDocument()
-    expect(screen.getByText('Dietitian • 2963N')).toBeInTheDocument()
+    expect(screen.getByText('Nutritionist • 2963N')).toBeInTheDocument()
     expect(screen.getByText('€ 40.00 · 45 min')).toBeInTheDocument()
     expect(screen.getByText('0.0 km from Braga')).toBeInTheDocument()
   })

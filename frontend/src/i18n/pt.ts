@@ -21,7 +21,7 @@ const pt: typeof en = {
   pagination: { label: 'Paginação', previous: 'Página anterior', next: 'Página seguinte' },
   card: {
     followUp: 'Seguir',
-    dietitian: 'Nutricionista • {{license}}',
+    role: 'Nutricionista • {{license}}',
     distanceFrom: 'a {{distance}} de {{city}}',
     service: 'Serviço',
     duration: '{{price}} · {{minutes}} min',
@@ -70,7 +70,7 @@ const pt: typeof en = {
   professionals: {
     title: 'Área do profissional',
     subtitle: 'Escolha quem é para ver os seus pedidos de consulta pendentes.',
-    dietitian: 'Nutricionista • {{license}}',
+    role: 'Nutricionista • {{license}}',
   },
   notFound: { title: 'Página não encontrada', back: 'Voltar à pesquisa' },
   errors: {

@@ -37,7 +37,7 @@ export default function ProfessionalsPage() {
               <Link to={`/nutritionists/${n.id}/pending-requests`} className="flex items-center gap-4 px-5 py-4 hover:bg-brand-soft">
                 <Avatar name={n.name} className="size-12 text-lg" />
                 <span className="font-medium text-brand">{n.name}</span>
-                <span className="text-sm text-muted">{t('professionals.dietitian', { license: n.license_number })}</span>
+                <span className="text-sm text-muted">{t('professionals.role', { license: n.license_number })}</span>
               </Link>
             </li>
           ))}
