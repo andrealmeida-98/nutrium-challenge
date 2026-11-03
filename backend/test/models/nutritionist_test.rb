@@ -9,6 +9,25 @@ class NutritionistTest < ActiveSupport::TestCase
     assert_equal "Rita", Nutritionist.new(name: " Rita ").name
   end
 
+  test "requires a license number" do
+    assert_not Nutritionist.new(name: "Rita", license_number: "").valid?
+  end
+
+  test "license number is stripped and upcased" do
+    assert_equal "2963N", Nutritionist.new(name: "Rita", license_number: " 2963n ").license_number
+  end
+
+  test "license number must be unique" do
+    duplicate = Nutritionist.new(name: "Outra", license_number: nutritionists(:rita).license_number.downcase)
+    assert_not duplicate.valid?
+  end
+
+  test "the database also rejects a duplicate license number" do
+    assert_raises(ActiveRecord::RecordNotUnique) do
+      Nutritionist.new(name: "Outra", license_number: nutritionists(:rita).license_number).save!(validate: false)
+    end
+  end
+
   test "has many services" do
     assert_equal 2, nutritionists(:rita).services.count
   end

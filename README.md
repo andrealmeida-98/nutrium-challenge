@@ -32,3 +32,8 @@ Covers the models and business rules, the mailers, and race conditions (threads 
 - **No `expired` status.** A pending request whose time has passed stays `pending`. Expiring it needs a scheduled (cron) job, which this project does not have.
 - Email jobs run in memory (`AsyncAdapter`) and are lost if the server restarts. A real deployment would use a persistent queue.
 - Times are in UTC. There is no nutritionist availability and no authentication, as the challenge assumes.
+
+## Mockup elements that are not functional
+
+- **"Follow-up" tag** on the search result card. The challenge text does not describe it, and following a nutritionist would need user accounts, which the challenge says are not required. It is drawn as a visual element only. There is no follow list.
+- **"Website" button** (called "Personal Page" in the challenge text). The challenge allows it to be a non-functional placeholder, so it is drawn but does nothing.
