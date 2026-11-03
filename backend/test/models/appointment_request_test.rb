@@ -1,6 +1,7 @@
 require "test_helper"
 
 class AppointmentRequestTest < ActiveSupport::TestCase
+  include ActionMailer::TestHelper
   setup do
     @rita_60 = services(:rita_consulta)   # 60 min
     @rita_30 = services(:rita_followup)   # 30 min, mesma nutricionista
@@ -36,6 +37,17 @@ class AppointmentRequestTest < ActiveSupport::TestCase
   test "ends_at is starts_at plus the service duration" do
     assert_equal at(11), submit(@rita_60, "a@x.com", at(10)).ends_at
     assert_equal at(10, 30), submit(@rita_30, "b@x.com", at(10)).ends_at
+  end
+
+  test "starts_at cannot be in the past" do
+    request = build(@rita_60, "ana@x.com", 1.hour.ago)
+
+    assert_not request.valid?
+    assert_includes request.errors[:starts_at], "must be in the future"
+  end
+
+  test "submit! refuses a request in the past" do
+    assert_raises(ActiveRecord::RecordInvalid) { submit(@rita_60, "ana@x.com", 1.day.ago) }
   end
 
   test "new requests start as pending" do
@@ -192,6 +204,66 @@ class AppointmentRequestTest < ActiveSupport::TestCase
     assert_raises(AppointmentRequest::InvalidTransition) { request.accept! }
   end
 
+  # --- Regra 4: emails ao guest ---------------------------------------------
+
+  test "accepting enqueues an accepted email to the guest" do
+    request = submit(@rita_60, "ana@x.com", at(10))
+
+    assert_enqueued_email_with AppointmentRequestMailer, :accepted, args: [ request ] do
+      request.accept!
+    end
+  end
+
+  test "rejecting enqueues a rejected email to the guest" do
+    request = submit(@rita_60, "ana@x.com", at(10))
+
+    assert_enqueued_email_with AppointmentRequestMailer, :rejected, args: [ request ] do
+      request.reject!
+    end
+  end
+
+  test "requests rejected automatically by accepting also get a rejected email" do
+    chosen = submit(@rita_60, "ana@x.com", at(10))
+    overlap = submit(@rita_60, "bia@x.com", at(10, 30))
+
+    assert_enqueued_emails 2 do   # 1 accepted + 1 rejected
+      chosen.accept!
+    end
+    assert_enqueued_email_with AppointmentRequestMailer, :rejected, args: [ overlap ]
+  end
+
+  test "submitting a request (and cancelling the previous one) sends no email" do
+    submit(@rita_60, "ana@x.com", at(10))
+
+    assert_no_enqueued_emails do
+      submit(@rita_60, "ana@x.com", at(14))   # cancela o anterior
+    end
+  end
+
+  test "no email is enqueued when accept! fails and the transaction rolls back" do
+    chosen = submit(@rita_60, "ana@x.com", at(10))
+    submit(@rita_60, "bia@x.com", at(10, 30))
+
+    # Faz o accept! rebentar DEPOIS de accepted! (e do email enfileirado).
+    with_failing_overlap_query do
+      assert_no_enqueued_emails do
+        assert_raises(RuntimeError) { chosen.accept! }
+      end
+    end
+
+    assert chosen.reload.pending?
+  end
+
+  test "no email is enqueued for an invalid transition" do
+    request = submit(@rita_60, "ana@x.com", at(10))
+    request.update_columns(status: :cancelled)
+
+    assert_no_enqueued_emails do
+      assert_raises(AppointmentRequest::InvalidTransition) { request.accept! }
+      assert_raises(AppointmentRequest::InvalidTransition) { request.reject! }
+    end
+  end
+
   # --- Rede de segurança na base de dados -----------------------------------
 
   test "database refuses two pending requests for the same email" do
@@ -209,8 +281,18 @@ class AppointmentRequestTest < ActiveSupport::TestCase
 
   private
 
+  # Substitui o scope `overlapping` por um que rebenta, e repõe o original no fim.
+  def with_failing_overlap_query
+    original = AppointmentRequest.method(:overlapping)
+    AppointmentRequest.define_singleton_method(:overlapping) { |*| raise "boom" }
+    yield
+  ensure
+    AppointmentRequest.define_singleton_method(:overlapping, original)
+  end
+
+  # Data sempre no futuro (daqui a 30 dias), senão os testes partiam com o tempo.
   def at(hour, minute = 0)
-    Time.zone.local(2026, 12, 1, hour, minute)
+    30.days.from_now.in_time_zone.change(hour: hour, min: minute)
   end
 
   def build(service, email, starts_at, name: "Guest")

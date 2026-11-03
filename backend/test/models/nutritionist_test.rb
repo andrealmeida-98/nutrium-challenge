@@ -15,7 +15,7 @@ class NutritionistTest < ActiveSupport::TestCase
 
   test "appointment_requests reach requests of all her services" do
     rita = nutritionists(:rita)
-    at = Time.zone.local(2026, 12, 1, 10)
+    at = 30.days.from_now.in_time_zone.change(hour: 10)
 
     a = submit(services(:rita_consulta), "a@x.com", at)
     b = submit(services(:rita_followup), "b@x.com", at + 2.hours)
