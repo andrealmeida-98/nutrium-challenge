@@ -36,4 +36,26 @@ class CityTest < ActiveSupport::TestCase
   test "requires coordinates" do
     assert_not City.new(name: "X", latitude: nil, longitude: nil).valid?
   end
+
+  test "resolve finds a city ignoring case, accents and surrounding spaces" do
+    covilha = City.create!(name: "Covilhã", latitude: 40.28, longitude: -7.5)
+
+    assert_equal covilha, City.resolve("covilha")
+    assert_equal covilha, City.resolve("  COVILHÃ ")
+  end
+
+  test "resolve returns nil for blank or unknown text" do
+    assert_nil City.resolve(nil)
+    assert_nil City.resolve("  ")
+    assert_nil City.resolve("Xpto")
+  end
+
+  test "resolve does not treat % or _ as wildcards" do
+    assert_nil City.resolve("Br%")
+    assert_nil City.resolve("Bra_a")
+  end
+
+  test "default is Braga" do
+    assert_equal cities(:braga), City.default
+  end
 end
