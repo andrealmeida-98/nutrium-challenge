@@ -7,6 +7,7 @@ Rails.application.routes.draw do
 
   resources :nutritionists, only: :index do
     resources :appointment_requests, only: :index
+    resources :busy_slots, only: :index
   end
 
   resources :appointment_requests, only: :create do
