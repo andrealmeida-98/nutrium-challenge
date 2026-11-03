@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+
+/* Colours measured from the mockup. */
+@theme {
+  --color-brand: #3fae86;
+  --color-brand-dark: #2f9972;
+  --color-brand-soft: #e3f4ec;
+  --color-hero-from: #6dbb93;
+  --color-hero-to: #59a687;
+  --color-accent: #d99a77;
+  --color-accent-soft: #f8e1dc;
+  --color-accent-text: #d9806a;
+  --color-ink: #4a4f55;
+  --color-muted: #8a9096;
+  --color-page: #f8f8f8;
+  --font-sans: 'Nunito Sans', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
