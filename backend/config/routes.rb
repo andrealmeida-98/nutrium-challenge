@@ -10,6 +10,8 @@ Rails.application.routes.draw do
     resources :busy_slots, only: :index
   end
 
+  resources :cities, only: :index
+
   resources :appointment_requests, only: :create do
     member do
       patch :accept

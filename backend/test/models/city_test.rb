@@ -58,4 +58,20 @@ class CityTest < ActiveSupport::TestCase
   test "default is Braga" do
     assert_equal cities(:braga), City.default
   end
+
+  test "suggest returns cities containing the text, starting-with first, ignoring accents" do
+    City.create!(name: "Covilhã", latitude: 40.28, longitude: -7.5)
+    City.create!(name: "Vila Covilha Nova", latitude: 40.0, longitude: -7.0)
+
+    assert_equal [ "Covilhã", "Vila Covilha Nova" ], City.suggest("covilha").map(&:name)
+  end
+
+  test "suggest is empty for blank text" do
+    assert_empty City.suggest(nil)
+    assert_empty City.suggest("  ")
+  end
+
+  test "suggest respects the limit" do
+    assert_equal 1, City.suggest("o", limit: 1).size
+  end
 end
