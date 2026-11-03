@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Nutritionist, Service } from '../api/types'
-import { formatDistance, formatPrice } from '../lib/format'
+import { useFormat } from '../lib/useFormat'
 import Avatar from './Avatar'
 import { BriefcaseIcon, ChevronDownIcon, MoneyIcon, PinIcon, StarIcon } from './icons'
 
@@ -11,6 +12,8 @@ type Props = {
 }
 
 export default function NutritionistCard({ nutritionist, fromCity, onSchedule }: Props) {
+  const { t } = useTranslation()
+  const format = useFormat()
   const [serviceId, setServiceId] = useState(nutritionist.services[0].id)
   const service = nutritionist.services.find((s) => s.id === serviceId) ?? nutritionist.services[0]
 
@@ -22,10 +25,10 @@ export default function NutritionistCard({ nutritionist, fromCity, onSchedule }:
         <div>
           {/* Decorative, as in the mockup: there is no "follow" feature (see README). */}
           <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-3 py-0.5 text-xs font-bold uppercase text-brand">
-            <StarIcon /> Follow-up
+            <StarIcon /> {t('card.followUp')}
           </span>
           <h2 className="text-2xl font-medium text-brand">{nutritionist.name}</h2>
-          <p className="text-sm text-ink">Dietitian • {nutritionist.license_number}</p>
+          <p className="text-sm text-ink">{t('card.dietitian', { license: nutritionist.license_number })}</p>
 
           <div className="mt-6 grid gap-x-24 gap-y-3 text-sm md:grid-cols-2">
             <div className="flex gap-3">
@@ -33,7 +36,7 @@ export default function NutritionistCard({ nutritionist, fromCity, onSchedule }:
               <div className="space-y-2">
                 <p className="font-bold text-brand">{service.city}</p>
                 <p>
-                  {formatDistance(service.distance_km)} from {fromCity}
+                  {t('card.distanceFrom', { distance: format.distance(service.distance_km), city: fromCity })}
                 </p>
               </div>
             </div>
@@ -42,7 +45,7 @@ export default function NutritionistCard({ nutritionist, fromCity, onSchedule }:
               <div className="flex items-center gap-3">
                 <BriefcaseIcon className="shrink-0 text-lg text-brand" />
                 <label className="relative">
-                  <span className="sr-only">Service</span>
+                  <span className="sr-only">{t('card.service')}</span>
                   <select
                     value={service.id}
                     onChange={(e) => setServiceId(Number(e.target.value))}
@@ -60,7 +63,7 @@ export default function NutritionistCard({ nutritionist, fromCity, onSchedule }:
               <div className="flex items-center gap-3">
                 <MoneyIcon className="shrink-0 text-lg text-brand" />
                 <span>
-                  {formatPrice(service.price_cents)} · {service.duration_minutes} min
+                  {t('card.duration', { price: format.price(service.price_cents), minutes: service.duration_minutes })}
                 </span>
               </div>
             </div>
@@ -74,11 +77,11 @@ export default function NutritionistCard({ nutritionist, fromCity, onSchedule }:
           onClick={() => onSchedule(nutritionist, service)}
           className="rounded-sm bg-accent-soft px-4 py-3 text-sm text-accent-text hover:brightness-95"
         >
-          Schedule appointment
+          {t('card.schedule')}
         </button>
         {/* Placeholder: the challenge allows this button to do nothing. */}
         <button type="button" className="rounded-sm bg-brand-soft px-4 py-3 text-sm text-brand hover:brightness-95">
-          Website
+          {t('card.website')}
         </button>
       </div>
     </article>

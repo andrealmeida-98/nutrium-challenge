@@ -1,28 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { createAppointmentRequest } from '../api/appointmentRequests'
 import { ApiError } from '../api/client'
 import { fetchBusySlots } from '../api/nutritionists'
 import type { Nutritionist, Service } from '../api/types'
 import { isDayAvailable, slotsForDay } from '../lib/availability'
-import { formatDate, formatPrice, formatTime } from '../lib/format'
+import { errorText, validationTexts } from '../lib/errors'
 import { useFetch } from '../lib/useFetch'
+import { useFormat } from '../lib/useFormat'
 import Calendar from './Calendar'
 import { CloseIcon } from './icons'
 
 type Props = { nutritionist: Nutritionist; service: Service; onClose: () => void }
-
-const FIELD_LABELS: Record<string, string> = {
-  guest_name: 'Name',
-  guest_email: 'Email',
-  starts_at: 'Date and time',
-  service: 'Service',
-}
-
-// "Name can't be blank", "Date and time is not available"...
-// One message per field: a blank email would otherwise say "can't be blank" and "is invalid".
-function errorMessages(details: Record<string, string[]>): string[] {
-  return Object.entries(details).map(([field, messages]) => `${FIELD_LABELS[field] ?? field} ${messages[0]}`)
-}
 
 const firstOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1)
 
@@ -30,6 +19,8 @@ const inputClass =
   'mt-1 w-full rounded-sm border border-gray-300 px-3 py-2 text-ink outline-none focus:border-brand focus:ring-1 focus:ring-brand'
 
 export default function ScheduleModal({ nutritionist, service, onClose }: Props) {
+  const { t } = useTranslation()
+  const format = useFormat()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [month, setMonth] = useState(() => firstOfMonth(new Date()))
@@ -66,7 +57,7 @@ export default function ScheduleModal({ nutritionist, service, onClose }: Props)
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!slot) {
-      setErrors(['Choose a date and time'])
+      setErrors([t('modal.chooseDateTime')])
       return
     }
 
@@ -82,15 +73,15 @@ export default function ScheduleModal({ nutritionist, service, onClose }: Props)
       setSent(true)
     } catch (error) {
       if (error instanceof ApiError) {
-        const messages = errorMessages(error.details)
-        setErrors(messages.length > 0 ? messages : [error.message])
+        const messages = validationTexts(error.details, t)
+        setErrors(messages.length > 0 ? messages : [errorText(error, t)])
         if (error.details.starts_at) {
           // Someone else got that time in the meantime: show it as taken.
           setSlot(null)
           busy.reload()
         }
       } else {
-        setErrors(['Something went wrong. Please try again.'])
+        setErrors([errorText(error, t)])
       }
     } finally {
       setSubmitting(false)
@@ -113,42 +104,54 @@ export default function ScheduleModal({ nutritionist, service, onClose }: Props)
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="schedule-title" className="text-xl font-medium text-brand">
-              Schedule appointment
+              {t('modal.title')}
             </h2>
             <p className="text-sm text-muted">
-              {nutritionist.name} · {service.name} · {service.duration_minutes} min · {formatPrice(service.price_cents)}
+              {t('modal.summary', {
+                nutritionist: nutritionist.name,
+                service: service.name,
+                minutes: service.duration_minutes,
+                price: format.price(service.price_cents),
+              })}
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-xl text-muted hover:text-ink">
+          <button type="button" onClick={onClose} aria-label={t('modal.close')} className="text-xl text-muted hover:text-ink">
             <CloseIcon />
           </button>
         </div>
 
         {sent && slot ? (
           <div className="mt-6" role="status">
-            <p className="font-medium text-brand">Request sent!</p>
+            <p className="font-medium text-brand">{t('modal.sentTitle')}</p>
             <p className="mt-1 text-sm">
-              You asked {nutritionist.name} for {formatDate(slot.toISOString())} at {formatTime(slot.toISOString())}.{' '}
-              {nutritionist.name} will answer soon and you will get an email at <strong>{email}</strong>. If you had
-              another pending request, it was cancelled: you can only have one at a time.
+              <Trans
+                i18nKey="modal.sentBody"
+                values={{
+                  nutritionist: nutritionist.name,
+                  date: format.date(slot.toISOString()),
+                  time: format.time(slot.toISOString()),
+                  email,
+                }}
+                components={{ email: <strong /> }}
+              />
             </p>
             <button type="button" onClick={onClose} className="mt-6 w-full rounded-sm bg-brand px-4 py-2 text-white hover:bg-brand-dark">
-              Close
+              {t('modal.close')}
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-5 space-y-4" noValidate>
             <label className="block text-sm">
-              Name
+              {t('modal.name')}
               <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus autoComplete="name" className={inputClass} />
             </label>
             <label className="block text-sm">
-              Email
+              {t('modal.email')}
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" className={inputClass} />
             </label>
 
             <fieldset aria-busy={busy.loading}>
-              <legend className="text-sm">Date and time</legend>
+              <legend className="text-sm">{t('modal.dateAndTime')}</legend>
               <div className="mt-2 rounded-sm border border-gray-200 p-3">
                 <Calendar
                   month={month}
@@ -164,17 +167,17 @@ export default function ScheduleModal({ nutritionist, service, onClose }: Props)
 
                 {busy.error && (
                   <p className="mt-2 text-xs text-muted">
-                    Could not check which times are taken. You can still send the request, we will check it for you.
+                    {t('modal.availabilityError')}
                   </p>
                 )}
 
                 {day && (
                   <div className="mt-4">
                     <p className="mb-2 text-xs text-muted">
-                      Times on {formatDate(day.toISOString())} (crossed out times are taken or have passed)
+                      {t('modal.timesOn', { date: format.date(day.toISOString()) })}
                     </p>
                     {slots.length === 0 ? (
-                      <p className="text-sm text-muted">This service does not fit in the working hours.</p>
+                      <p className="text-sm text-muted">{t('modal.noSlots')}</p>
                     ) : (
                       <div className="grid grid-cols-4 gap-2">
                         {slots.map((s) => {
@@ -192,7 +195,7 @@ export default function ScheduleModal({ nutritionist, service, onClose }: Props)
                                   : 'border-gray-200 hover:border-brand hover:bg-brand-soft disabled:border-gray-100 disabled:text-gray-300 disabled:line-through disabled:hover:bg-transparent'
                               }`}
                             >
-                              {formatTime(s.start.toISOString())}
+                              {format.time(s.start.toISOString())}
                             </button>
                           )
                         })}
@@ -203,7 +206,7 @@ export default function ScheduleModal({ nutritionist, service, onClose }: Props)
               </div>
               {slot && (
                 <p className="mt-2 text-sm text-brand-dark">
-                  Selected: {formatDate(slot.toISOString())}, {formatTime(slot.toISOString())}
+                  {t('modal.selected', { date: format.date(slot.toISOString()), time: format.time(slot.toISOString()) })}
                 </p>
               )}
             </fieldset>
@@ -221,7 +224,7 @@ export default function ScheduleModal({ nutritionist, service, onClose }: Props)
               disabled={submitting}
               className="w-full rounded-sm bg-accent px-4 py-2 font-medium text-white hover:brightness-95 disabled:opacity-60"
             >
-              {submitting ? 'Sending…' : 'Send request'}
+              {submitting ? t('modal.sending') : t('modal.send')}
             </button>
           </form>
         )}

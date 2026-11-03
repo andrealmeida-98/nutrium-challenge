@@ -1,17 +1,20 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { searchNutritionists } from '../api/nutritionists'
 import type { Nutritionist, Service } from '../api/types'
 import Hero from '../components/Hero'
-import { LocateIcon } from '../components/icons'
+import LocationCombobox from '../components/LocationCombobox'
 import NutritionistCard from '../components/NutritionistCard'
 import Pagination from '../components/Pagination'
 import ScheduleModal from '../components/ScheduleModal'
+import { errorText } from '../lib/errors'
 import { useFetch } from '../lib/useFetch'
 
 const fieldClass = 'w-full rounded-sm bg-white px-6 py-4 text-ink shadow-md outline-none placeholder:text-gray-300 focus-visible:ring-2 focus-visible:ring-white/70'
 
 export default function SearchPage() {
+  const { t } = useTranslation()
   // The search lives in the URL (?q=&location=&page=), so back/forward and reloads work.
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
@@ -19,7 +22,11 @@ export default function SearchPage() {
   const page = Math.max(Number(params.get('page')) || 1, 1)
 
   const [qInput, setQInput] = useState(q)
-  const [locationInput, setLocationInput] = useState(location)
+  // The location is a city picked from the list. `locationText` is what is typed,
+  // `locationCity` the city picked (null while the text is not a pick).
+  const [locationText, setLocationText] = useState(location)
+  const [locationCity, setLocationCity] = useState<string | null>(location || null)
+  const [locationInvalid, setLocationInvalid] = useState(false)
   const [scheduling, setScheduling] = useState<{ nutritionist: Nutritionist; service: Service } | null>(null)
 
   const { data, error, loading, reload } = useFetch(
@@ -38,7 +45,11 @@ export default function SearchPage() {
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    updateParams({ q: qInput.trim(), location: locationInput.trim(), page: 1 })
+    if (locationText.trim() && !locationCity) {
+      setLocationInvalid(true) // free text is not a place: ask for a pick instead of guessing
+      return
+    }
+    updateParams({ q: qInput.trim(), location: locationCity ?? '', page: 1 })
   }
 
   function goToPage(next: number) {
@@ -53,22 +64,27 @@ export default function SearchPage() {
           <input
             value={qInput}
             onChange={(e) => setQInput(e.target.value)}
-            placeholder="Name, service…"
-            aria-label="Name or service"
+            placeholder={t('search.namePlaceholder')}
+            aria-label={t('search.nameLabel')}
             className={fieldClass}
           />
-          <div className="relative">
-            <input
-              value={locationInput}
-              onChange={(e) => setLocationInput(e.target.value)}
-              placeholder="Location"
-              aria-label="Location"
-              className={`${fieldClass} pr-12`}
-            />
-            <LocateIcon className="absolute right-5 top-1/2 -translate-y-1/2 text-lg text-brand" />
-          </div>
+          <LocationCombobox
+            text={locationText}
+            selected={locationCity}
+            invalid={locationInvalid}
+            onTextChange={(text) => {
+              setLocationText(text)
+              setLocationCity(null)
+              setLocationInvalid(false)
+            }}
+            onSelect={(name) => {
+              setLocationText(name)
+              setLocationCity(name)
+              setLocationInvalid(false)
+            }}
+          />
           <button type="submit" className="rounded-sm bg-accent px-12 py-4 font-medium text-white shadow-md hover:brightness-95">
-            Search
+            {t('search.submit')}
           </button>
         </form>
       </Hero>
@@ -76,21 +92,21 @@ export default function SearchPage() {
       <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
         {data?.location.fallback && (
           <p role="status" className="rounded-sm bg-accent-soft px-4 py-3 text-sm text-accent-text">
-            We could not find “{data.location.requested}”, so these results are near {data.location.resolved}.
+            {t('search.fallback', { requested: data.location.requested, resolved: data.location.resolved })}
           </p>
         )}
 
         {error && (
           <div role="alert" className="rounded-sm bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error.message}{' '}
+            {errorText(error, t)}{' '}
             <button type="button" onClick={reload} className="font-medium underline">
-              Try again
+              {t('errors.tryAgain')}
             </button>
           </div>
         )}
 
         {data && data.nutritionists.length === 0 && !loading && (
-          <p className="py-12 text-center text-muted">No nutritionists found. Try a different name or service.</p>
+          <p className="py-12 text-center text-muted">{t('search.empty')}</p>
         )}
 
         <div className={`space-y-6 ${loading && data ? 'opacity-60' : ''}`} aria-busy={loading}>
@@ -104,7 +120,7 @@ export default function SearchPage() {
           ))}
         </div>
 
-        {loading && !data && <p className="py-12 text-center text-muted">Loading…</p>}
+        {loading && !data && <p className="py-12 text-center text-muted">{t('search.loading')}</p>}
 
         {data && <Pagination page={data.meta.page} totalPages={data.meta.total_pages} onChange={goToPage} />}
       </main>

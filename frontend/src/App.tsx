@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import Hero from './components/Hero'
 import PendingRequestsPage from './pages/PendingRequestsPage'
@@ -5,13 +6,14 @@ import ProfessionalsPage from './pages/ProfessionalsPage'
 import SearchPage from './pages/SearchPage'
 
 function NotFound() {
+  const { t } = useTranslation()
   return (
     <>
       <Hero />
       <main className="mx-auto max-w-3xl px-6 py-16 text-center">
-        <h1 className="text-2xl font-light">Page not found</h1>
+        <h1 className="text-2xl font-light">{t('notFound.title')}</h1>
         <Link to="/" className="mt-4 inline-block text-brand underline">
-          Back to the search
+          {t('notFound.back')}
         </Link>
       </main>
     </>

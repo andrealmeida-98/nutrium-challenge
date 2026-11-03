@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { answerAppointmentRequest } from '../api/appointmentRequests'
 import { ApiError } from '../api/client'
@@ -7,12 +8,14 @@ import type { AppointmentRequest } from '../api/types'
 import Hero from '../components/Hero'
 import { ChevronLeftIcon, ChevronRightIcon, HistoryIcon, ShareIcon } from '../components/icons'
 import RequestCard, { RequestCardSkeleton } from '../components/RequestCard'
+import { errorText } from '../lib/errors'
 import { useFetch } from '../lib/useFetch'
 
 const PER_PAGE = 3
 const navButton = 'flex size-9 items-center justify-center border border-gray-200 bg-white text-muted disabled:opacity-40'
 
 export default function PendingRequestsPage() {
+  const { t } = useTranslation()
   const { id = '' } = useParams()
   const { data, error, loading, reload, setData } = useFetch((signal) => fetchPendingRequests(id, signal), [id])
 
@@ -37,16 +40,11 @@ export default function PendingRequestsPage() {
       const fresh = await fetchPendingRequests(id)
       const autoRejected = requests.length - 1 - fresh.appointment_requests.length
       setData(fresh)
-      setMessage({
-        kind: 'ok',
-        text:
-          answer === 'accept'
-            ? `Accepted ${request.guest_name}'s request.` +
-              (autoRejected > 0 ? ` ${autoRejected} overlapping ${autoRejected === 1 ? 'request was' : 'requests were'} rejected automatically.` : '')
-            : `Rejected ${request.guest_name}'s request.`,
-      })
+      const overlap = answer === 'accept' && autoRejected > 0 ? ` ${t('pending.overlap', { count: autoRejected })}` : ''
+      const text = t(answer === 'accept' ? 'pending.accepted' : 'pending.rejected', { name: request.guest_name })
+      setMessage({ kind: 'ok', text: text + overlap })
     } catch (e) {
-      setMessage({ kind: 'error', text: e instanceof ApiError ? e.message : 'Something went wrong. Please try again.' })
+      setMessage({ kind: 'error', text: errorText(e, t) })
       reload() // it may already have been answered (for example rejected automatically)
     } finally {
       setBusyId(null)
@@ -63,24 +61,24 @@ export default function PendingRequestsPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 id="pending-title" className="text-2xl font-light text-ink">
-                Pending Requests
+                {t('pending.title')}
               </h1>
               <p className="text-xs text-muted">
-                Accept or reject new pending requests{data ? ` · ${data.nutritionist.name}` : ''}
+                {t('pending.subtitle')}{data ? ` · ${data.nutritionist.name}` : ''}
               </p>
             </div>
             <div className="flex gap-2">
-              <button type="button" className={navButton} aria-label="Previous requests" disabled={page === 0} onClick={() => setPage(page - 1)}>
+              <button type="button" className={navButton} aria-label={t('pending.previous')} disabled={page === 0} onClick={() => setPage(page - 1)}>
                 <ChevronLeftIcon />
               </button>
-              <button type="button" className={navButton} aria-label="Next requests" disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>
+              <button type="button" className={navButton} aria-label={t('pending.next')} disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>
                 <ChevronRightIcon />
               </button>
               {/* Decorative, as in the mockup: not part of the challenge. */}
-              <button type="button" className={`${navButton} text-ink`} aria-label="Share">
+              <button type="button" className={`${navButton} text-ink`} aria-label={t('pending.share')}>
                 <ShareIcon />
               </button>
-              <button type="button" className={`${navButton} text-ink`} aria-label="History">
+              <button type="button" className={`${navButton} text-ink`} aria-label={t('pending.history')}>
                 <HistoryIcon />
               </button>
             </div>
@@ -98,14 +96,12 @@ export default function PendingRequestsPage() {
           {error && (
             <div role="alert" className="mt-4 rounded-sm bg-red-50 px-4 py-3 text-sm text-red-700">
               {error instanceof ApiError && error.status === 404 ? (
-                <>
-                  Nutritionist not found. <Link to="/professionals" className="font-medium underline">Choose one from the list</Link>.
-                </>
+                <Trans i18nKey="pending.notFound" components={{ list: <Link to="/professionals" className="font-medium underline" /> }} />
               ) : (
                 <>
-                  {error.message}{' '}
+                  {errorText(error, t)}{' '}
                   <button type="button" onClick={reload} className="font-medium underline">
-                    Try again
+                    {t('errors.tryAgain')}
                   </button>
                 </>
               )}
@@ -120,7 +116,7 @@ export default function PendingRequestsPage() {
           </div>
 
           {data && requests.length === 0 && (
-            <p className="py-10 text-center text-muted">No pending requests. New ones will show up here.</p>
+            <p className="py-10 text-center text-muted">{t('pending.empty')}</p>
           )}
         </section>
       </main>

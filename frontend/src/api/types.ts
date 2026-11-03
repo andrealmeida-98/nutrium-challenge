@@ -17,6 +17,8 @@ export type Nutritionist = {
   services: Service[]
 }
 
+export type City = { id: number; name: string }
+
 export type SearchResponse = {
   location: { requested: string | null; resolved: string; fallback: boolean }
   meta: { page: number; per_page: number; total_count: number; total_pages: number }

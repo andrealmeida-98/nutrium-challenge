@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { AppointmentRequest } from '../api/types'
-import { formatDate, formatTime } from '../lib/format'
+import { useFormat } from '../lib/useFormat'
 import Avatar from './Avatar'
 import { CalendarIcon, ClockIcon } from './icons'
 
@@ -13,6 +14,8 @@ type Props = {
 // One pending request. "Answer request" opens the two choices, as in the mockup the
 // card has a single call to action at the bottom.
 export default function RequestCard({ request, busy, onAnswer }: Props) {
+  const { t } = useTranslation()
+  const format = useFormat()
   const [answering, setAnswering] = useState(false)
 
   return (
@@ -25,11 +28,11 @@ export default function RequestCard({ request, busy, onAnswer }: Props) {
           <p className="truncate pb-1 text-xs text-ink">{request.service.name}</p>
           <p className="flex items-center gap-2 text-sm">
             <CalendarIcon className="rounded-full bg-brand-soft p-0.5 text-lg text-brand" />
-            {formatDate(request.starts_at)}
+            {format.date(request.starts_at)}
           </p>
           <p className="flex items-center gap-2 text-sm">
             <ClockIcon className="rounded-full bg-brand-soft p-0.5 text-lg text-brand" />
-            {formatTime(request.starts_at)}
+            {format.time(request.starts_at)}
           </p>
         </div>
       </div>
@@ -43,7 +46,7 @@ export default function RequestCard({ request, busy, onAnswer }: Props) {
               onClick={() => onAnswer(request, 'accept')}
               className="py-3 text-sm font-bold text-brand hover:bg-brand-soft disabled:opacity-50"
             >
-              Accept
+              {t('pending.accept')}
             </button>
             <button
               type="button"
@@ -51,12 +54,12 @@ export default function RequestCard({ request, busy, onAnswer }: Props) {
               onClick={() => onAnswer(request, 'reject')}
               className="py-3 text-sm font-bold text-accent-text hover:bg-accent-soft disabled:opacity-50"
             >
-              Reject
+              {t('pending.reject')}
             </button>
           </div>
         ) : (
           <button type="button" onClick={() => setAnswering(true)} className="w-full py-3 text-sm font-bold text-brand hover:bg-brand-soft">
-            Answer request
+            {t('pending.answer')}
           </button>
         )}
       </div>

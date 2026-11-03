@@ -11,8 +11,10 @@ const nutritionist: Nutritionist = { id: 1, name: 'Ana Ribeiro', license_number:
 const at = (day: number, hour: number, minute = 0) => new Date(2026, 10, day, hour, minute)
 const busy = (from: Date, to: Date) => ({ starts_at: from.toISOString(), ends_at: to.toISOString() })
 
-function renderModal() {
-  return render(<ScheduleModal nutritionist={nutritionist} service={service} onClose={() => {}} />)
+// Renders the modal and waits until the times taken have been loaded (the days are disabled until then).
+async function renderModal() {
+  render(<ScheduleModal nutritionist={nutritionist} service={service} onClose={() => {}} />)
+  await waitFor(() => expect(screen.getByRole('group', { name: 'Date and time' })).toHaveAttribute('aria-busy', 'false'))
 }
 
 // 18 November 2026, 8:00. Only Date is faked, so timers and user events keep working.
@@ -25,7 +27,7 @@ afterEach(() => vi.useRealTimers())
 describe('ScheduleModal availability', () => {
   it('asks the API for the times taken in the month on screen', async () => {
     const fetchMock = mockApi({ 'GET /nutritionists/1/busy_slots': () => ({ body: { busy_slots: [] } }) })
-    renderModal()
+    await renderModal()
     await screen.findByRole('button', { name: '20 November 2026' })
 
     const url = new URL(String(fetchMock.mock.calls[0][0]))
@@ -35,7 +37,7 @@ describe('ScheduleModal availability', () => {
 
   it('crosses out the times that are already accepted', async () => {
     mockApi({ 'GET /nutritionists/1/busy_slots': () => ({ body: { busy_slots: [busy(at(20, 10), at(20, 11))] } }) })
-    renderModal()
+    await renderModal()
 
     await userEvent.click(await screen.findByRole('button', { name: '20 November 2026' }))
 
@@ -50,7 +52,7 @@ describe('ScheduleModal availability', () => {
 
   it('disables a day with no free time left', async () => {
     mockApi({ 'GET /nutritionists/1/busy_slots': () => ({ body: { busy_slots: [busy(at(20, 9), at(20, 18))] } }) })
-    renderModal()
+    await renderModal()
 
     expect(await screen.findByRole('button', { name: '19 November 2026' })).toBeEnabled()
     expect(screen.getByRole('button', { name: '20 November 2026' })).toBeDisabled()
@@ -59,7 +61,7 @@ describe('ScheduleModal availability', () => {
   it('disables the days in the past and the times that have passed today', async () => {
     vi.setSystemTime(new Date(2026, 10, 18, 12, 15)) // today, a quarter past noon
     mockApi({ 'GET /nutritionists/1/busy_slots': () => ({ body: { busy_slots: [] } }) })
-    renderModal()
+    await renderModal()
 
     expect(await screen.findByRole('button', { name: '17 November 2026' })).toBeDisabled()
     await userEvent.click(screen.getByRole('button', { name: '18 November 2026' }))
@@ -71,7 +73,7 @@ describe('ScheduleModal availability', () => {
 
   it('cannot go back to a month that is over', async () => {
     mockApi({ 'GET /nutritionists/1/busy_slots': () => ({ body: { busy_slots: [] } }) })
-    renderModal()
+    await renderModal()
     await screen.findByRole('button', { name: '20 November 2026' })
 
     expect(screen.getByRole('button', { name: 'Previous month' })).toBeDisabled()
@@ -79,7 +81,7 @@ describe('ScheduleModal availability', () => {
 
   it('loads the next month when the guest moves forward', async () => {
     const fetchMock = mockApi({ 'GET /nutritionists/1/busy_slots': () => ({ body: { busy_slots: [] } }) })
-    renderModal()
+    await renderModal()
     await screen.findByRole('button', { name: '20 November 2026' })
 
     await userEvent.click(screen.getByRole('button', { name: 'Next month' }))
@@ -92,7 +94,7 @@ describe('ScheduleModal availability', () => {
 
   it('lets the guest try anyway when the availability could not be loaded', async () => {
     mockApi({ 'GET /nutritionists/1/busy_slots': () => ({ status: 500, body: { error: 'Boom' } }) })
-    renderModal()
+    await renderModal()
 
     expect(await screen.findByText(/Could not check which times are taken/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '20 November 2026' })).toBeEnabled()
@@ -107,7 +109,7 @@ describe('ScheduleModal availability', () => {
         return { status: 422, body: { error: 'Validation failed', details: { starts_at: ['is not available'] } } }
       },
     })
-    renderModal()
+    await renderModal()
     await userEvent.type(screen.getByLabelText('Name'), 'Maria')
     await userEvent.type(screen.getByLabelText('Email'), 'maria@example.com')
     await userEvent.click(await screen.findByRole('button', { name: '20 November 2026' }))

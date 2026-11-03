@@ -50,3 +50,24 @@ describe('visiblePages', () => {
     expect(visiblePages(20, 20)).toEqual([16, 17, 18, 19, 20])
   })
 })
+
+describe('format in Portuguese', () => {
+  it('formats prices the Portuguese way', () => {
+    expect(formatPrice(2500, 'pt')).toBe('25,00 €')
+  })
+
+  it('formats the date in words, in Portuguese', () => {
+    expect(formatDate(local(2025, 12, 21), 'pt')).toBe('21 de dezembro de 2025')
+    expect(formatDate(local(2026, 11, 2), 'pt')).toBe('2 de novembro de 2026')
+  })
+
+  it('uses a 24 hour clock', () => {
+    expect(formatTime(local(2025, 12, 21, 9, 30), 'pt')).toBe('09:30')
+    expect(formatTime(local(2025, 12, 21, 15, 5), 'pt')).toBe('15:05')
+  })
+
+  it('uses a decimal comma for distances', () => {
+    expect(formatDistance(4.26, 'pt')).toBe('4,3 km')
+    expect(formatDistance(15.94, 'pt')).toBe('16 km')
+  })
+})

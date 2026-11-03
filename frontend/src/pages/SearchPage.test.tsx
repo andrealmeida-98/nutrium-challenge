@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -57,19 +57,91 @@ describe('SearchPage', () => {
     expect(screen.getByText('€ 60.00 · 60 min')).toBeInTheDocument()
   })
 
-  it('sends the typed search and location to the API', async () => {
-    const fetchMock = mockApi({ 'GET /nutritionists': () => response() })
-    renderPage()
-    await screen.findByRole('heading', { name: 'Ana Ribeiro' })
+  describe('location autocomplete', () => {
+    const porto = { cities: [{ id: 1, name: 'Porto' }] }
+    const nutritionistRequests = (fetchMock: ReturnType<typeof mockApi>) =>
+      fetchMock.mock.calls.filter(([url]) => new URL(String(url)).pathname === '/nutritionists')
 
-    await userEvent.type(screen.getByLabelText('Name or service'), 'sports')
-    await userEvent.type(screen.getByLabelText('Location'), 'Porto')
-    await userEvent.click(screen.getByRole('button', { name: 'Search' }))
+    async function pickPorto() {
+      await userEvent.type(screen.getByLabelText('Location'), 'por')
+      await userEvent.click(await screen.findByRole('option', { name: 'Porto' }))
+    }
 
-    const lastUrl = new URL(String(fetchMock.mock.calls.at(-1)![0]))
-    expect(lastUrl.searchParams.get('q')).toBe('sports')
-    expect(lastUrl.searchParams.get('location')).toBe('Porto')
-    expect(lastUrl.searchParams.get('page')).toBe('1')
+    it('sends the typed search and the city picked from the list', async () => {
+      const fetchMock = mockApi({ 'GET /nutritionists': () => response(), 'GET /cities': () => ({ body: porto }) })
+      renderPage()
+      await screen.findByRole('heading', { name: 'Ana Ribeiro' })
+
+      await userEvent.type(screen.getByLabelText('Name or service'), 'sports')
+      await pickPorto()
+      await userEvent.click(screen.getByRole('button', { name: 'Search' }))
+
+      const lastUrl = new URL(String(nutritionistRequests(fetchMock).at(-1)![0]))
+      expect(lastUrl.searchParams.get('q')).toBe('sports')
+      expect(lastUrl.searchParams.get('location')).toBe('Porto')
+      expect(lastUrl.searchParams.get('page')).toBe('1')
+    })
+
+    it('does not accept free text as a city and asks to choose one', async () => {
+      const fetchMock = mockApi({ 'GET /nutritionists': () => response(), 'GET /cities': () => ({ body: porto }) })
+      renderPage()
+      await screen.findByRole('heading', { name: 'Ana Ribeiro' })
+      const before = nutritionistRequests(fetchMock).length
+
+      await userEvent.type(screen.getByLabelText('Location'), 'Xpto')
+      await userEvent.click(screen.getByRole('button', { name: 'Search' }))
+
+      expect(await screen.findByText('Choose a city from the list.')).toBeInTheDocument()
+      expect(screen.getByLabelText('Location')).toHaveAttribute('aria-invalid', 'true')
+      expect(nutritionistRequests(fetchMock)).toHaveLength(before) // nothing was searched
+    })
+
+    it('takes the error away once a city is picked', async () => {
+      mockApi({ 'GET /nutritionists': () => response(), 'GET /cities': () => ({ body: porto }) })
+      renderPage()
+      await screen.findByRole('heading', { name: 'Ana Ribeiro' })
+      await userEvent.type(screen.getByLabelText('Location'), 'por')
+      await userEvent.click(screen.getByRole('button', { name: 'Search' }))
+      expect(await screen.findByText('Choose a city from the list.')).toBeInTheDocument()
+
+      await userEvent.click(await screen.findByRole('option', { name: 'Porto' }))
+
+      expect(screen.queryByText('Choose a city from the list.')).not.toBeInTheDocument()
+    })
+
+    it('searches near Braga when the location is left empty', async () => {
+      const fetchMock = mockApi({ 'GET /nutritionists': () => response() })
+      renderPage()
+      await screen.findByRole('heading', { name: 'Ana Ribeiro' })
+
+      await userEvent.type(screen.getByLabelText('Name or service'), 'ana')
+      await userEvent.click(screen.getByRole('button', { name: 'Search' }))
+
+      const lastUrl = new URL(String(nutritionistRequests(fetchMock).at(-1)![0]))
+      expect(lastUrl.searchParams.get('q')).toBe('ana')
+      expect(lastUrl.searchParams.has('location')).toBe(false)
+    })
+
+    it('forgets the picked city when the text is edited', async () => {
+      const fetchMock = mockApi({ 'GET /nutritionists': () => response(), 'GET /cities': () => ({ body: porto }) })
+      renderPage()
+      await screen.findByRole('heading', { name: 'Ana Ribeiro' })
+      await pickPorto()
+
+      await userEvent.type(screen.getByLabelText('Location'), 'x') // "Portox" is not a city
+      await userEvent.click(screen.getByRole('button', { name: 'Search' }))
+
+      expect(await screen.findByText('Choose a city from the list.')).toBeInTheDocument()
+      expect(nutritionistRequests(fetchMock).every(([url]) => !String(url).includes('location=Portox'))).toBe(true)
+    })
+
+    it('starts with the city in the address', async () => {
+      mockApi({ 'GET /nutritionists': () => response() })
+      renderPage('/?location=Faro')
+
+      expect(screen.getByLabelText('Location')).toHaveValue('Faro')
+      expect(screen.queryByText('Choose a city from the list.')).not.toBeInTheDocument()
+    })
   })
 
   it('warns when the location was not found', async () => {
@@ -97,7 +169,7 @@ describe('SearchPage', () => {
     mockApi({ 'GET /nutritionists': () => (++calls === 1 ? { status: 500, body: { error: 'Boom' } } : response()) })
     renderPage()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Boom')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong. Please try again.')
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
     expect(await screen.findByRole('heading', { name: 'Ana Ribeiro' })).toBeInTheDocument()
@@ -131,11 +203,16 @@ describe('SearchPage', () => {
       return screen.getByRole('dialog')
     }
 
+    // The days are disabled until the times taken have been loaded.
+    const calendarLoaded = (dialog: HTMLElement) =>
+      waitFor(() => expect(within(dialog).getByRole('group', { name: 'Date and time' })).toHaveAttribute('aria-busy', 'false'))
+
     // Name, email, then 20 November at 10:00 am.
     async function fillForm(dialog: HTMLElement, name: string, email: string) {
       await userEvent.type(within(dialog).getByLabelText('Name'), name)
       await userEvent.type(within(dialog).getByLabelText('Email'), email)
-      await userEvent.click(await within(dialog).findByRole('button', { name: '20 November 2026' }))
+      await calendarLoaded(dialog)
+      await userEvent.click(within(dialog).getByRole('button', { name: '20 November 2026' }))
       await userEvent.click(within(dialog).getByRole('button', { name: '10:00 am' }))
     }
 
@@ -180,7 +257,8 @@ describe('SearchPage', () => {
       })
       const dialog = await openModal()
       await userEvent.type(within(dialog).getByLabelText('Name'), 'Maria')
-      await userEvent.click(await within(dialog).findByRole('button', { name: '20 November 2026' }))
+      await calendarLoaded(dialog)
+      await userEvent.click(within(dialog).getByRole('button', { name: '20 November 2026' }))
       await userEvent.click(within(dialog).getByRole('button', { name: '10:00 am' }))
       await userEvent.click(within(dialog).getByRole('button', { name: 'Send request' }))
 

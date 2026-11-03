@@ -112,7 +112,7 @@ describe('PendingRequestsPage', () => {
     expect(await screen.findByText(/No pending requests/)).toBeInTheDocument()
   })
 
-  it('shows the API message and reloads when the request was already answered (409)', async () => {
+  it('says the request was already answered and reloads (409)', async () => {
     let calls = 0
     mockApi({
       'GET /nutritionists/1/appointment_requests': () => listBody(++calls === 1 ? [pending(1, 'Maria', 9)] : []),
@@ -123,7 +123,7 @@ describe('PendingRequestsPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Answer request' }))
     await userEvent.click(screen.getByRole('button', { name: 'Accept' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('request is rejected, not pending')
+    expect(await screen.findByRole('alert')).toHaveTextContent('This request was already answered.')
     expect(await screen.findByText(/No pending requests/)).toBeInTheDocument()
   })
 
